@@ -1,0 +1,23 @@
+[project]
+name = "BUPT-Tools"
+version = "0.2.2"
+description = "A series of tools that can be used in your BUPT college life."
+authors = [
+    {name = "EliorFoy", email = "1700118540@qq.com"},
+]
+dependencies = [
+    "requests>=2.32.3",
+    "loguru>=0.7.2",
+    "beautifulsoup4>=4.12.3",
+]
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
