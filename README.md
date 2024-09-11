@@ -1,5 +1,8 @@
 # BUPT
-## 用法举例
+> 注意：本项目还未经过抢课真正测试，不过你可以试一试。
+> 如果有bug那也正常，提一下issue就好
+## 1.用法举例
+### ①直接使用此仓库
 ```python
 from bupt_internal import BUPT
 
@@ -12,3 +15,5 @@ BUPT.grab_all_course(session)
 
 BUPT.unchoose_course(session, "射电", "虚拟现实") # 退选
 ```
+### ②使用pip包
+本包已经发布，可以直接使用`pip install BUTP-Tools`安装后执行以上代码即可
