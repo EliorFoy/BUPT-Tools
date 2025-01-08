@@ -6,6 +6,7 @@ import json
 import configparser
 import os
 import threading
+from deprecation import deprecated
 
 
 class BUPT:
@@ -207,7 +208,11 @@ class BUPT:
         return session
 
     @staticmethod
+    @deprecated  # 该验证方法已废弃，因为学校似乎不用这个链接来开启选课了
     def verify(session):
+        """
+        必须打开选课网页后才能发送数据包后得到服务器返回，可能session做了校验
+        """
         r_stage_1 = session.get(
             "https://jwgl.bupt.edu.cn/jsxsd/xsxk/xsxk_index?jx0502zbid=7472D65463154EAEAC55ED73A6197E04")
         if "当前不在选课时间范围内" in r_stage_1.text:
@@ -224,30 +229,34 @@ class BUPT:
             return session
         # TODO 这里不能同时打开，估计还要分别写一个逻辑，或者暂且就是选课第一阶段选择stage1，第二阶段选择stage2
 
+    @staticmethod
     def verify_new(session):
         cookie_dict = {cookie.name: cookie.value for cookie in session.cookies}
-        try:
-            r_first = requests.get("https://jwgl.bupt.edu.cn/jsxsd/framework/xsrkxz.jsp", cookies=cookie_dict).text
-            url_first = "https://jwgl.bupt.edu.cn/" + re.findall('<a href="(.*?)">进入选课</a>', r_first)[0]
-            r_second = requests.get(url_first, cookies=cookie_dict).text
-            url_second = "https://jwgl.bupt.edu.cn/" + re.findall('<a href="(.*?)".+>进入选课</a>', r_second)[0]
-            requests.get(url_second, cookies=cookie_dict)
-        except Exception as e:
-            r_new = requests.get("https://jwgl.bupt.edu.cn/jsxsd/xsxk/xklc_list", cookies=cookie_dict).text
-            url ="https://jwgl.bupt.edu.cn/"+ re.findall('<a.+href="(.*?)".+>进入选课</a>', r_new)[0]
-            requests.get(url, cookies=cookie_dict)
+        # 懒得去判断逻辑了，直接一个try，网页开启就会pass的
+        while True:
+            try:
+                main_page_html = requests.get("https://jwgl.bupt.edu.cn/jsxsd/framework/xsMain_bjyddx.jsp", cookies=cookie_dict).text
+                current_choose_course_page_first_step_url = BeautifulSoup(main_page_html, 'html.parser').find('div', text="正常选课").parent.get('data-src')
+                # 第一个页面
+                choose_course_first_page_html = requests.get("https://jwgl.bupt.edu.cn"+current_choose_course_page_first_step_url, cookies=cookie_dict).text
+                choose_course_second_page_url = BeautifulSoup(choose_course_first_page_html, 'html.parser').find('a', text="进入选课").get('href')
+                # 第二个页面
+                choose_course_second_page_html = requests.get("https://jwgl.bupt.edu.cn" + choose_course_second_page_url, cookies=cookie_dict).text
+                choose_course_final_url = re.findall('<a.+href="(.*?)".+>进入选课</a>', choose_course_second_page_html)[0]
+                # 请求一下最终选课页面，不请求的话好像是会返回用户在别处登录
+                requests.get("https://jwgl.bupt.edu.cn" + choose_course_final_url, cookies=cookie_dict)
+                logger.success("进入选课页面成功")
+                break
+            except:
+                logger.error("进入选课页面失败，重新访问等待选课开始...")
+                continue
         return session
+
 
     @staticmethod
     def login_with_verify():
         session = BUPT.login()
-        try:
-            session = BUPT.verify_new(session)
-            return session
-        except Exception as e:
-            session = BUPT.verify(session)
-            return session
-
+        return BUPT.verify_new(session)
     @staticmethod
     def choose_course(session, course_type, course_name: str):
         """
@@ -306,7 +315,7 @@ class BUPT:
             logger.info(f"获取匹配课程名称:{course_name_matched}")
         else:
             logger.error(f"获取匹配课程名称失败，请检查是否有该课程！({course_name})")
-            return
+            return True
         params = (
             ('kcid', course_id[0]),
             ('cfbs', 'null'),
@@ -319,11 +328,12 @@ class BUPT:
         if res.json()["success"]:
             logger.success(res.json()["message"] + f"({course_name_matched[0]})")
             if "人数已满" in res.json()["message"]:
+                logger.error("人数已满，居然没抢到...")
                 return False
             return True
         else:
-            logger.error(res.json()["message"] + f"({course_name_matched[0]})")
-            return False
+            logger.success(res.json()["message"] + f"({course_name_matched[0]})")
+            return True
 
     @staticmethod
     def get_chosen_courses(session):
