@@ -16,6 +16,7 @@ BUPT.init()
 session = BUPT.login_with_verify()
 
 # 第一次启动会提示输入要抢的课以及登录教育管理网站需要的账号密码生成配置文件，后续可以直接在配置文件即config.ini中修改
+# 注意config.ini文件编码为GBK
 BUPT.grab_all_course(session)  
 
 BUPT.unchoose_course(session, "射电", "虚拟现实")  # 退选
