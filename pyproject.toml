@@ -1,6 +1,6 @@
 [project]
 name = "BUPT-Tools"
-version = "0.2.2"
+version = "0.2.3"
 description = "A series of tools that can be used in your BUPT college life."
 authors = [
     {name = "EliorFoy", email = "1700118540@qq.com"},
