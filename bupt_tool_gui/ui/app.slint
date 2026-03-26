@@ -1,0 +1,208 @@
+// Copyright © BUPT Tool Team
+// SPDX-License-Identifier: GPL-3.0
+
+import { Button, TextInput, VerticalLayout, HorizontalLayout, GroupBox, ListView } from "std-widgets.slint";
+
+export component AppWindow inherits Window {
+    width: 800px;
+    height: 600px;
+    title: "BUPT 抢课工具 - Rust + Slint";
+
+    in-out property <string> username;
+    in-out property <string> password;
+    in-out property <string> course-ids;
+    in-out property <int> check-interval: 100;
+    in-out property <bool> logged-in: false;
+    in-out property <bool> grabbing: false;
+    in-out property <string> status-message: "就绪";
+
+    callback login();
+    
+    global GrabActions {
+        callback start-grabbing();
+        callback stop-grabbing();
+    }
+
+    global LogModel {
+        property <[string]> logs;
+        pure public function push(message: string) {
+            let len = std::length(logs);
+            if (len >= 100) {
+                // 移除最旧的日志
+                logs = std::slice(logs, 1, len);
+            }
+            logs[len - 1] := message;
+        }
+    }
+
+    VerticalLayout {
+        spacing: 10px;
+        padding: 10px;
+
+        // 登录区域
+        GroupBox {
+            title: "登录";
+            preferred-height: 150px;
+            
+            VerticalLayout {
+                spacing: 8px;
+                
+                HorizontalLayout {
+                    spacing: 10px;
+                    Text {
+                        text: "学号:";
+                        vertical-alignment: center;
+                        min-width: 60px;
+                    }
+                    TextInput {
+                        text <=> root.username;
+                        placeholder-text: "请输入学号";
+                        horizontal-stretch: 1;
+                    }
+                }
+
+                HorizontalLayout {
+                    spacing: 10px;
+                    Text {
+                        text: "密码:";
+                        vertical-alignment: center;
+                        min-width: 60px;
+                    }
+                    TextInput {
+                        text <=> root.password;
+                        placeholder-text: "请输入密码";
+                        echo-mode: password;
+                        horizontal-stretch: 1;
+                    }
+                }
+
+                HorizontalLayout {
+                    spacing: 10px;
+                    
+                    Button {
+                        text: "登录";
+                        enabled: !root.logged-in;
+                        clicked => {
+                            root.login();
+                        }
+                    }
+                    
+                    Button {
+                        text: "退出登录";
+                        enabled: root.logged-in && !root.grabbing;
+                        clicked => {
+                            root.logged-in = false;
+                            root.status-message = "已退出登录";
+                        }
+                    }
+                }
+            }
+        }
+
+        // 配置区域
+        GroupBox {
+            title: "抢课配置";
+            preferred-height: 150px;
+            
+            VerticalLayout {
+                spacing: 8px;
+                
+                HorizontalLayout {
+                    spacing: 10px;
+                    Text {
+                        text: "课程 ID:";
+                        vertical-alignment: center;
+                        min-width: 60px;
+                    }
+                    TextInput {
+                        text <=> root.course-ids;
+                        placeholder-text: "多个课程用逗号分隔，例如：12345,67890";
+                        horizontal-stretch: 1;
+                    }
+                }
+
+                HorizontalLayout {
+                    spacing: 10px;
+                    Text {
+                        text: "检查间隔 (ms):";
+                        vertical-alignment: center;
+                        min-width: 100px;
+                    }
+                    TextInput {
+                        text <=> root.check-interval;
+                        placeholder-text: "100";
+                        input-type: number;
+                        max-width: 100px;
+                    }
+                }
+
+                HorizontalLayout {
+                    spacing: 10px;
+                    
+                    Button {
+                        text: "开始抢课";
+                        enabled: root.logged-in && !root.grabbing;
+                        clicked => {
+                            root.start-grabbing();
+                        }
+                    }
+                    
+                    Button {
+                        text: "停止抢课";
+                        enabled: root.grabbing;
+                        clicked => {
+                            root.stop-grabbing();
+                        }
+                    }
+                }
+            }
+        }
+
+        // 状态栏
+        HorizontalLayout {
+            spacing: 10px;
+            padding: 5px;
+            background: #f0f0f0;
+            
+            Text {
+                text: "状态:";
+                vertical-alignment: center;
+                font-weight: bold;
+            }
+            
+            Text {
+                text: root.status-message;
+                vertical-alignment: center;
+                color: root.grabbing ? #ff9800 : (root.logged-in ? #4caf50 : #666);
+                horizontal-stretch: 1;
+            }
+            
+            Rectangle {
+                width: 10px;
+                height: 10px;
+                border-radius: 5px;
+                background: root.grabbing ? #ff9800 : (root.logged-in ? #4caf50 : #999);
+            }
+        }
+
+        // 日志区域
+        GroupBox {
+            title: "运行日志";
+            horizontal-stretch: 1;
+            
+            ListView {
+                data: LogModel.logs;
+                preferred-height: 200px;
+                
+                ListItem {
+                    Text {
+                        text: model-data;
+                        font-family: "monospace";
+                        font-size: 12px;
+                        color: std::contains(model-data, "✓") ? #4caf50 : (std::contains(model-data, "✗") ? #f44336 : #333);
+                    }
+                }
+            }
+        }
+    }
+}

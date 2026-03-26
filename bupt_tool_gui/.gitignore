@@ -1,0 +1,24 @@
+# Rust
+/target/
+
+# Slint generated files
+*.slint.rs
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+**/*.rlib
+**/*.so
+**/*.dll
+**/*.dylib
+
+# Debug
+**/*.pdb
